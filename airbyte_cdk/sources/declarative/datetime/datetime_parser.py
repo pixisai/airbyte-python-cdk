@@ -4,6 +4,8 @@
 
 import datetime
 from typing import Union
+import pyarrow as pa
+import pyarrow.compute as pc
 
 
 class DatetimeParser:
@@ -26,11 +28,11 @@ class DatetimeParser:
         # The recommended way to parse a date from its timestamp representation is to use datetime.fromtimestamp
         # See https://stackoverflow.com/a/4974930
         if format == "%s":
-            return datetime.datetime.fromtimestamp(int(date), tz=datetime.timezone.utc)
+            return pc.from_unixtime(pa.scalar(int(date)), unit='s').as_py().replace(tzinfo=datetime.timezone.utc)
         elif format == "%s_as_float":
-            return datetime.datetime.fromtimestamp(float(date), tz=datetime.timezone.utc)
+            return pc.from_unixtime(pa.scalar(float(date)), unit='s').as_py().replace(tzinfo=datetime.timezone.utc)
         elif format == "%ms":
-            return self._UNIX_EPOCH + datetime.timedelta(milliseconds=int(date))
+            return pc.from_unixtime(pa.scalar(int(date) / 1000), unit='s').as_py().replace(tzinfo=datetime.timezone.utc)
 
         parsed_datetime = datetime.datetime.strptime(str(date), format)
         if self._is_naive(parsed_datetime):
