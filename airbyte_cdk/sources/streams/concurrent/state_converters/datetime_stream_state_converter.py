@@ -3,7 +3,7 @@
 #
 
 from abc import abstractmethod
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
 import pyarrow as pa
 import pyarrow.compute as pc
 from typing import Any, Callable, List, MutableMapping, Optional, Tuple
