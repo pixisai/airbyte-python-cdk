@@ -2,6 +2,7 @@
 # Copyright (c) 2023 Airbyte, Inc., all rights reserved.
 #
 
+from datetime import datetime, timezone, timedelta
 from typing import Any, List, Mapping, Optional, Sequence, Tuple, Union
 
 import dpath
@@ -219,7 +220,7 @@ class SingleUseRefreshTokenOauth2Authenticator(Oauth2Authenticator):
     def set_refresh_token(self, new_refresh_token: str):
         dpath.new(self._connector_config, self._refresh_token_config_path, new_refresh_token)
 
-    def get_token_expiry_date(self) -> pendulum.DateTime:
+    def get_token_expiry_date(self) -> datetime:
         expiry_date = dpath.get(
             self._connector_config, self._token_expiry_date_config_path, default=""
         )
