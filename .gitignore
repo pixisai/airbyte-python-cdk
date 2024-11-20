@@ -14,3 +14,7 @@ dist
 .pytest_cache
 .idea
 **/__pycache__
+
+.aider.*
+.aider*
+.env
