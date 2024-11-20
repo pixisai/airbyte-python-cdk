@@ -6,7 +6,8 @@ import logging
 from unittest.mock import Mock
 
 import freezegun
-import pendulum
+import pyarrow as pa
+import pyarrow.compute as pc
 import pytest
 import requests
 from airbyte_cdk.sources.declarative.auth import DeclarativeOauth2Authenticator
@@ -21,7 +22,7 @@ config = {
     "refresh_endpoint": "refresh_end",
     "client_id": "some_client_id",
     "client_secret": "some_client_secret",
-    "token_expiry_date": pendulum.now().subtract(days=2).to_rfc3339_string(),
+    "token_expiry_date": pc.strftime(pc.now() - pa.scalar(2 * 24 * 60 * 60), format="%Y-%m-%dT%H:%M:%SZ").as_py(),
     "custom_field": "in_outbound_request",
     "another_field": "exists_in_body",
     "grant_type": "some_grant_type",
@@ -223,7 +224,7 @@ class TestOauth2Authenticator:
                 parameters={},
             )
 
-            assert oauth.get_token_expiry_date() == pendulum.parse(expected_date)
+            assert oauth.get_token_expiry_date() == pc.strptime(expected_date, format="%Y-%m-%dT%H:%M:%SZ").as_py().replace(tzinfo=datetime.timezone.utc)
 
     @pytest.mark.parametrize(
         "expires_in_response, token_expiry_date_format",
@@ -240,7 +241,7 @@ class TestOauth2Authenticator:
     ):
         next_day = "2020-01-02T00:00:00Z"
         config.update(
-            {"token_expiry_date": pendulum.parse(next_day).subtract(days=2).to_rfc3339_string()}
+            {"token_expiry_date": pc.strftime(pc.strptime(next_day, format="%Y-%m-%dT%H:%M:%SZ") - pa.scalar(2 * 24 * 60 * 60), format="%Y-%m-%dT%H:%M:%SZ").as_py()}
         )
         message_repository = Mock()
         oauth = DeclarativeOauth2Authenticator(
@@ -324,7 +325,7 @@ class TestOauth2Authenticator:
         else:
             token = oauth.get_access_token()
             assert "access_token" == token
-            assert oauth.get_token_expiry_date() == pendulum.parse(next_day)
+            assert oauth.get_token_expiry_date() == pc.strptime(next_day, format="%Y-%m-%dT%H:%M:%SZ").as_py().replace(tzinfo=datetime.timezone.utc)
 
     def test_error_handling(self, mocker):
         oauth = DeclarativeOauth2Authenticator(
