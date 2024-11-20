@@ -2,7 +2,7 @@
 # Copyright (c) 2023 Airbyte, Inc., all rights reserved.
 #
 
-from datetime import timezone, timedelta
+from datetime import datetime, timezone, timedelta
 import pyarrow as pa
 import pyarrow.compute as pc
 from typing import Any, List, Mapping, Optional, Sequence, Tuple, Union
