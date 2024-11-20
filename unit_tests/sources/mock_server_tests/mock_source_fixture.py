@@ -7,7 +7,8 @@ from abc import ABC
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Tuple
 
-import pendulum
+import pyarrow as pa
+import pyarrow.compute as pc
 import requests
 from airbyte_cdk.models import ConnectorSpecification, SyncMode
 from airbyte_cdk.sources import AbstractSource, Source
@@ -143,20 +144,20 @@ class Planets(IncrementalIntegrationStream):
         cursor_field: Optional[List[str]] = None,
         stream_state: Optional[Mapping[str, Any]] = None,
     ) -> Iterable[Optional[Mapping[str, Any]]]:
-        start_date = pendulum.parse(self.start_date)
+        start_date = pc.strptime(self.start_date, format="%Y-%m-%dT%H:%M:%SZ")
 
         if stream_state:
-            start_date = pendulum.parse(stream_state.get(self.cursor_field))
+            start_date = pc.strptime(stream_state.get(self.cursor_field), format="%Y-%m-%dT%H:%M:%SZ")
 
         date_slices = []
 
-        end_date = datetime.now(timezone.utc).replace(microsecond=0)
-        while start_date < end_date:
-            end_date_slice = min(start_date.add(days=7), end_date)
+        end_date = pa.scalar(datetime.now(timezone.utc).replace(microsecond=0))
+        while pc.compare(start_date, "<", end_date).as_py():
+            end_date_slice = pc.min([pc.add_duration(start_date, pa.scalar("P7D")), end_date])
 
             date_slice = {
-                "start_date": start_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "end_date": end_date_slice.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "start_date": pc.strftime(start_date, format="%Y-%m-%dT%H:%M:%SZ").as_py(),
+                "end_date": pc.strftime(end_date_slice, format="%Y-%m-%dT%H:%M:%SZ").as_py(),
             }
 
             date_slices.append(date_slice)
