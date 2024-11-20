@@ -9,7 +9,8 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, Union
 
 import freezegun
 import isodate
-import pendulum
+import pyarrow as pa
+import pyarrow.compute as pc
 from airbyte_cdk.models import (
     AirbyteMessage,
     AirbyteRecordMessage,
@@ -530,7 +531,7 @@ def test_create_concurrent_cursor():
     assert isinstance(party_members_cursor, ConcurrentCursor)
     assert party_members_cursor._stream_name == "party_members"
     assert party_members_cursor._cursor_field.cursor_field_key == "updated_at"
-    assert party_members_cursor._start == pendulum.parse(_CONFIG.get("start_date"))
+    assert party_members_cursor._start == pc.strptime(pa.scalar(_CONFIG.get("start_date")), format="%Y-%m-%dT%H:%M:%S.%fZ").as_py()
     assert party_members_cursor._end_provider() == datetime(
         year=2024, month=9, day=1, tzinfo=timezone.utc
     )
@@ -546,7 +547,7 @@ def test_create_concurrent_cursor():
     assert isinstance(locations_cursor, ConcurrentCursor)
     assert locations_cursor._stream_name == "locations"
     assert locations_cursor._cursor_field.cursor_field_key == "updated_at"
-    assert locations_cursor._start == pendulum.parse(_CONFIG.get("start_date"))
+    assert locations_cursor._start == pc.strptime(pa.scalar(_CONFIG.get("start_date")), format="%Y-%m-%dT%H:%M:%S.%fZ").as_py()
     assert locations_cursor._end_provider() == datetime(
         year=2024, month=9, day=1, tzinfo=timezone.utc
     )
