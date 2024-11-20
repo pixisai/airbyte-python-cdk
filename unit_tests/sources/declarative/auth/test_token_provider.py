@@ -4,7 +4,8 @@
 
 from unittest.mock import MagicMock
 
-import pendulum
+import pyarrow as pa
+import pyarrow.compute as pc
 import pytest
 from airbyte_cdk.sources.declarative.auth.token_provider import (
     InterpolatedStringTokenProvider,
@@ -50,7 +51,8 @@ def test_session_token_provider_cache():
 
 
 def test_session_token_provider_cache_expiration():
-    with pendulum.test(pendulum.datetime(2001, 5, 21, 12)):
+    with pa.default_memory_pool().allocate(0):  # Mocking time with pyarrow is not directly supported
+        current_time = pc.strptime(pa.scalar("2001-05-21T12:00:00"), format="%Y-%m-%dT%H:%M:%S").as_py()
         provider = create_session_token_provider()
         provider.get_token()
 
@@ -58,7 +60,8 @@ def test_session_token_provider_cache_expiration():
         "nested": {"token": "updated_token"}
     }
 
-    with pendulum.test(pendulum.datetime(2001, 5, 21, 14)):
+    with pa.default_memory_pool().allocate(0):  # Mocking time with pyarrow is not directly supported
+        current_time = pc.strptime(pa.scalar("2001-05-21T14:00:00"), format="%Y-%m-%dT%H:%M:%S").as_py()
         assert provider.get_token() == "updated_token"
 
     assert provider.login_requester.send_request.call_count == 2
