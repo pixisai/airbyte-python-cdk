@@ -8,6 +8,8 @@ from typing import Any, List, Mapping, Optional, Union
 import pyarrow as pa
 import pyarrow.compute as pc
 from datetime import datetime, timezone, timedelta
+import pyarrow as pa
+import pyarrow.compute as pc
 from airbyte_cdk.sources.declarative.auth.declarative_authenticator import DeclarativeAuthenticator
 from airbyte_cdk.sources.declarative.interpolation.interpolated_mapping import InterpolatedMapping
 from airbyte_cdk.sources.declarative.interpolation.interpolated_string import InterpolatedString
@@ -85,13 +87,12 @@ class DeclarativeOauth2Authenticator(AbstractOauth2Authenticator, DeclarativeAut
             self.refresh_request_body or {}, parameters=parameters
         )
         self._token_expiry_date: datetime = (
-            pc.strptime(
+            datetime.strptime(
                 InterpolatedString.create(self.token_expiry_date, parameters=parameters).eval(self.config),
-                format=self.token_expiry_date_format,
-                unit='s'
-            ).as_py().replace(tzinfo=timezone.utc)
+                self.token_expiry_date_format
+            ).replace(tzinfo=timezone.utc)
             if self.token_expiry_date
-            else pc.now().as_py().replace(tzinfo=datetime.timezone.utc) - timedelta(days=1)
+            else datetime.now(timezone.utc) - timedelta(days=1)
         )
         self._access_token: Optional[str] = None  # access_token is initialized by a setter
 
