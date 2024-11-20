@@ -3,7 +3,9 @@
 #
 
 from abc import abstractmethod
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta, timezone
+import pyarrow as pa
+import pyarrow.compute as pc
 from typing import Any, Callable, List, MutableMapping, Optional, Tuple
 
 import pyarrow as pa
@@ -36,7 +38,7 @@ class DateTimeStreamStateConverter(AbstractStreamStateConverter):
 
     @classmethod
     def get_end_provider(cls) -> Callable[[], datetime]:
-        return lambda: datetime.now(timezone.utc)
+        return lambda: pc.now().as_py().replace(tzinfo=timezone.utc)
 
     @abstractmethod
     def increment(self, timestamp: datetime) -> datetime: ...
@@ -168,7 +170,7 @@ class IsoMillisConcurrentStreamStateConverter(DateTimeStreamStateConverter):
         return timestamp.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
     def parse_timestamp(self, timestamp: str) -> datetime:
-        return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+        return pc.strptime(pa.scalar(timestamp), format="%Y-%m-%dT%H:%M:%S.%fZ").as_py().replace(tzinfo=timezone.utc)
 
 
 class CustomFormatConcurrentStreamStateConverter(IsoMillisConcurrentStreamStateConverter):
