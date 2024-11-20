@@ -6,6 +6,7 @@ import logging
 from unittest.mock import Mock
 
 import freezegun
+import datetime
 import pyarrow as pa
 import pyarrow.compute as pc
 import pytest
@@ -272,7 +273,7 @@ class TestOauth2Authenticator:
         mocker.patch.object(requests, "request", side_effect=mock_request, autospec=True)
         token = oauth.get_access_token()
         assert "access_token" == token
-        assert oauth.get_token_expiry_date() == pendulum.parse(next_day)
+        assert oauth.get_token_expiry_date() == pc.strptime(next_day, format="%Y-%m-%dT%H:%M:%SZ").as_py().replace(tzinfo=datetime.timezone.utc)
         assert message_repository.log_message.call_count == 1
 
     @pytest.mark.parametrize(
@@ -295,7 +296,7 @@ class TestOauth2Authenticator:
     @freezegun.freeze_time("2020-01-01")
     def test_set_token_expiry_date_no_format(self, mocker, expires_in_response, next_day, raises):
         config.update(
-            {"token_expiry_date": pendulum.parse(next_day).subtract(days=2).to_rfc3339_string()}
+            {"token_expiry_date": pc.strftime(pc.strptime(next_day, format="%Y-%m-%dT%H:%M:%SZ") - pa.scalar(2 * 24 * 60 * 60), format="%Y-%m-%dT%H:%M:%SZ").as_py()}
         )
         oauth = DeclarativeOauth2Authenticator(
             token_refresh_endpoint="{{ config['refresh_endpoint'] }}",
