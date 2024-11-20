@@ -7,7 +7,7 @@ from typing import Any, List, Mapping, Optional, Union
 
 import pyarrow as pa
 import pyarrow.compute as pc
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from airbyte_cdk.sources.declarative.auth.declarative_authenticator import DeclarativeAuthenticator
 from airbyte_cdk.sources.declarative.interpolation.interpolated_mapping import InterpolatedMapping
 from airbyte_cdk.sources.declarative.interpolation.interpolated_string import InterpolatedString
