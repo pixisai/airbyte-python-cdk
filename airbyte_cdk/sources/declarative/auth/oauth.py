@@ -85,12 +85,13 @@ class DeclarativeOauth2Authenticator(AbstractOauth2Authenticator, DeclarativeAut
             self.refresh_request_body or {}, parameters=parameters
         )
         self._token_expiry_date: datetime = (
-            datetime.strptime(
+            pc.strptime(
                 InterpolatedString.create(self.token_expiry_date, parameters=parameters).eval(self.config),
-                self.token_expiry_date_format
-            ).replace(tzinfo=timezone.utc)
+                format=self.token_expiry_date_format,
+                unit='s'
+            ).as_py().replace(tzinfo=timezone.utc)
             if self.token_expiry_date
-            else datetime.now(timezone.utc) - timedelta(days=1)
+            else pc.now().as_py().replace(tzinfo=datetime.timezone.utc) - timedelta(days=1)
         )
         self._access_token: Optional[str] = None  # access_token is initialized by a setter
 
