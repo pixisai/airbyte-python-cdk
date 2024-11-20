@@ -11,6 +11,8 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping
 
+import pyarrow as pa
+import pyarrow.compute as pc
 import pytest
 import yaml
 from airbyte_cdk import Connector
@@ -36,7 +38,7 @@ def mock_config():
 @pytest.fixture
 def nonempty_file(mock_config):
     with tempfile.NamedTemporaryFile("w") as file:
-        file.write(json.dumps(mock_config))
+        file.write(json.dumps(mock_config, default=str))
         file.flush()
         yield file
 
