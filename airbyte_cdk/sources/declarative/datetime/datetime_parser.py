@@ -21,12 +21,6 @@ class DatetimeParser:
     _UNIX_EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
 
     def parse(self, date: Union[str, int], format: str) -> datetime.datetime:
-        # "%s" is a valid (but unreliable) directive for formatting, but not for parsing
-        # It is defined as
-        # The number of seconds since the Epoch, 1970-01-01 00:00:00+0000 (UTC). https://man7.org/linux/man-pages/man3/strptime.3.html
-        #
-        # The recommended way to parse a date from its timestamp representation is to use datetime.fromtimestamp
-        # See https://stackoverflow.com/a/4974930
         if format == "%s":
             return pc.from_unixtime(pa.scalar(int(date)), unit='s').as_py().replace(tzinfo=datetime.timezone.utc)
         elif format == "%s_as_float":
