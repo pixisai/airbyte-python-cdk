@@ -2,7 +2,9 @@
 # Copyright (c) 2023 Airbyte, Inc., all rights reserved.
 #
 
-from datetime import datetime, timezone, timedelta
+from datetime import timezone, timedelta
+import pyarrow as pa
+import pyarrow.compute as pc
 from typing import Any, List, Mapping, Optional, Sequence, Tuple, Union
 
 import dpath
@@ -53,7 +55,7 @@ class Oauth2Authenticator(AbstractOauth2Authenticator):
         self._refresh_request_body = refresh_request_body
         self._grant_type = grant_type
 
-        self._token_expiry_date = token_expiry_date or datetime.now(timezone.utc) - timedelta(days=1)
+        self._token_expiry_date = token_expiry_date or pc.now().as_py().replace(tzinfo=timezone.utc) - timedelta(days=1)
         self._token_expiry_date_format = token_expiry_date_format
         self._token_expiry_is_time_of_expiration = token_expiry_is_time_of_expiration
         self._access_token = None
@@ -224,7 +226,7 @@ class SingleUseRefreshTokenOauth2Authenticator(Oauth2Authenticator):
         expiry_date = dpath.get(
             self._connector_config, self._token_expiry_date_config_path, default=""
         )
-        return datetime.now(timezone.utc) - timedelta(days=1) if expiry_date == "" else datetime.strptime(expiry_date, self._token_expiry_date_format).replace(tzinfo=timezone.utc)
+        return pc.now().as_py().replace(tzinfo=timezone.utc) - timedelta(days=1) if expiry_date == "" else pc.strptime(pa.scalar(expiry_date), format=self._token_expiry_date_format).as_py().replace(tzinfo=timezone.utc)
 
     def set_token_expiry_date(self, new_token_expiry_date):
         dpath.new(
@@ -233,16 +235,16 @@ class SingleUseRefreshTokenOauth2Authenticator(Oauth2Authenticator):
 
     def token_has_expired(self) -> bool:
         """Returns True if the token is expired"""
-        return datetime.now(timezone.utc) > self.get_token_expiry_date()
+        return pc.now().as_py().replace(tzinfo=timezone.utc) > self.get_token_expiry_date()
 
     @staticmethod
     def get_new_token_expiry_date(
         access_token_expires_in: str, token_expiry_date_format: str = None
     ) -> datetime:
         if token_expiry_date_format:
-            return datetime.strptime(access_token_expires_in, token_expiry_date_format).replace(tzinfo=timezone.utc)
+            return pc.strptime(pa.scalar(access_token_expires_in), format=token_expiry_date_format).as_py().replace(tzinfo=timezone.utc)
         else:
-            return datetime.now(timezone.utc) + timedelta(seconds=int(access_token_expires_in))
+            return pc.now().as_py().replace(tzinfo=timezone.utc) + timedelta(seconds=int(access_token_expires_in))
 
     def get_access_token(self) -> str:
         """Retrieve new access and refresh token if the access token has expired.
