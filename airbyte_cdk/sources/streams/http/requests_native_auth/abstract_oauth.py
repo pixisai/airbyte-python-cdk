@@ -5,6 +5,7 @@
 import logging
 from abc import abstractmethod
 from json import JSONDecodeError
+import datetime
 from typing import Any, List, Mapping, MutableMapping, Optional, Tuple, Union
 
 import backoff
@@ -165,7 +166,7 @@ class AbstractOauth2Authenticator(AuthBase):
             self.get_expires_in_name()
         ]
 
-    def _parse_token_expiration_date(self, value: Union[str, int]) -> pendulum.DateTime:
+    def _parse_token_expiration_date(self, value: Union[str, int]) -> datetime.datetime:
         """
         Return the expiration datetime of the refresh token
 
@@ -218,7 +219,7 @@ class AbstractOauth2Authenticator(AuthBase):
         """List of requested scopes"""
 
     @abstractmethod
-    def get_token_expiry_date(self) -> pendulum.DateTime:
+    def get_token_expiry_date(self) -> datetime.datetime:
         """Expiration date of the access token"""
 
     @abstractmethod
