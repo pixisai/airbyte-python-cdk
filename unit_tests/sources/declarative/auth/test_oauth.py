@@ -204,28 +204,24 @@ class TestOauth2Authenticator:
         ],
         ids=["timestamp_as_integer", "timestamp_as_integer_inside_string"],
     )
-    def test_initialize_declarative_oauth_with_token_expiry_date_as_timestamp(
-        self, timestamp, expected_date
-    ):
-        # TODO: should be fixed inside DeclarativeOauth2Authenticator, remove next line after fixing
-        with pytest.raises(TypeError):
-            oauth = DeclarativeOauth2Authenticator(
-                token_refresh_endpoint="{{ config['refresh_endpoint'] }}",
-                client_id="{{ config['client_id'] }}",
-                client_secret="{{ config['client_secret'] }}",
-                refresh_token="{{ parameters['refresh_token'] }}",
-                config=config | {"token_expiry_date": timestamp},
-                scopes=["scope1", "scope2"],
-                token_expiry_date="{{ config['token_expiry_date'] }}",
-                refresh_request_body={
-                    "custom_field": "{{ config['custom_field'] }}",
-                    "another_field": "{{ config['another_field'] }}",
-                    "scopes": ["no_override"],
-                },
-                parameters={},
-            )
+    def test_initialize_declarative_oauth_with_token_expiry_date_as_timestamp(self, timestamp, expected_date):
+        oauth = DeclarativeOauth2Authenticator(
+            token_refresh_endpoint="{{ config['refresh_endpoint'] }}",
+            client_id="{{ config['client_id'] }}",
+            client_secret="{{ config['client_secret'] }}",
+            refresh_token="{{ parameters['refresh_token'] }}",
+            config=config | {"token_expiry_date": timestamp},
+            scopes=["scope1", "scope2"],
+            token_expiry_date="{{ config['token_expiry_date'] }}",
+            refresh_request_body={
+                "custom_field": "{{ config['custom_field'] }}",
+                "another_field": "{{ config['another_field'] }}",
+                "scopes": ["no_override"],
+            },
+            parameters={},
+        )
 
-            assert oauth.get_token_expiry_date() == pc.strptime(expected_date, format="%Y-%m-%dT%H:%M:%SZ").as_py().replace(tzinfo=datetime.timezone.utc)
+        assert oauth.get_token_expiry_date() == pc.strptime(expected_date, format="%Y-%m-%dT%H:%M:%SZ").as_py().replace(tzinfo=datetime.timezone.utc)
 
     @pytest.mark.parametrize(
         "expires_in_response, token_expiry_date_format",
@@ -241,9 +237,12 @@ class TestOauth2Authenticator:
         self, mocker, expires_in_response, token_expiry_date_format
     ):
         next_day = "2020-01-02T00:00:00Z"
-        config.update(
-            {"token_expiry_date": pc.strftime(pc.strptime(next_day, format="%Y-%m-%dT%H:%M:%SZ") - pa.scalar(2 * 24 * 60 * 60), format="%Y-%m-%dT%H:%M:%SZ").as_py()}
-        )
+        config.update({
+            "token_expiry_date": pc.strftime(
+                pc.strptime(next_day, format="%Y-%m-%dT%H:%M:%SZ") - pa.scalar(2 * 24 * 60 * 60),
+                format="%Y-%m-%dT%H:%M:%SZ"
+            ).as_py()
+        })
         message_repository = Mock()
         oauth = DeclarativeOauth2Authenticator(
             token_refresh_endpoint="{{ config['refresh_endpoint'] }}",
