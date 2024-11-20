@@ -7,7 +7,8 @@ import datetime
 from typing import Any, Mapping
 
 import freezegun
-import pendulum
+import pyarrow as pa
+import pyarrow.compute as pc
 import pytest
 from airbyte_cdk import AirbyteTracedException
 from airbyte_cdk.models import FailureType, Level
@@ -3005,33 +3006,27 @@ def test_create_concurrent_cursor_from_datetime_based_cursor_all_fields(
     expected_datetime_format = "%Y-%m-%dT%H:%M:%S.%fZ"
     expected_cursor_granularity = datetime.timedelta(microseconds=1)
 
-    expected_start = pendulum.parse(expected_start)
-    expected_end = datetime.datetime(
-        year=2024, month=10, day=15, second=0, microsecond=0, tzinfo=datetime.timezone.utc
-    )
+    expected_start = pc.strptime(pa.scalar(expected_start), format="%Y-%m-%dT%H:%M:%S.%fZ").as_py()
+    expected_end = pc.strptime(pa.scalar("2024-10-15T00:00:00.000000Z"), format="%Y-%m-%dT%H:%M:%S.%fZ").as_py()
     if stream_state:
         # Using incoming state, the resulting already completed partition is the start_time up to the last successful
         # partition indicated by the legacy sequential state
         expected_concurrent_state = {
-            "slices": [
-                {
-                    "start": pendulum.parse(config["start_time"]),
-                    "end": pendulum.parse(stream_state["updated_at"]),
-                    "most_recent_cursor_value": pendulum.parse(stream_state["updated_at"]),
-                },
-            ],
+            "slices": [{
+                "start": pc.strptime(pa.scalar(config["start_time"]), format="%Y-%m-%dT%H:%M:%S.%fZ").as_py(),
+                "end": pc.strptime(pa.scalar(stream_state["updated_at"]), format="%Y-%m-%dT%H:%M:%S.%fZ").as_py(),
+                "most_recent_cursor_value": pc.strptime(pa.scalar(stream_state["updated_at"]), format="%Y-%m-%dT%H:%M:%S.%fZ").as_py(),
+            }],
             "state_type": "date-range",
             "legacy": {"updated_at": "2024-10-01T00:00:00.000000Z"},
         }
     else:
         expected_concurrent_state = {
-            "slices": [
-                {
-                    "start": pendulum.parse(config["start_time"]),
-                    "end": pendulum.parse(config["start_time"]),
-                    "most_recent_cursor_value": pendulum.parse(config["start_time"]),
-                },
-            ],
+            "slices": [{
+                "start": pc.strptime(pa.scalar(config["start_time"]), format="%Y-%m-%dT%H:%M:%S.%fZ").as_py(),
+                "end": pc.strptime(pa.scalar(config["start_time"]), format="%Y-%m-%dT%H:%M:%S.%fZ").as_py(),
+                "most_recent_cursor_value": pc.strptime(pa.scalar(config["start_time"]), format="%Y-%m-%dT%H:%M:%S.%fZ").as_py(),
+            }],
             "state_type": "date-range",
             "legacy": {},
         }
