@@ -226,10 +226,10 @@ class Legacies(IntegrationStream):
         cursor_field: Optional[List[str]] = None,
         stream_state: Optional[Mapping[str, Any]] = None,
     ) -> Iterable[Optional[Mapping[str, Any]]]:
-        start_date = pendulum.parse(self.start_date)
+        start_date = pc.strptime(self.start_date, format="%Y-%m-%dT%H:%M:%SZ")
 
         if stream_state:
-            start_date = pendulum.parse(stream_state.get(self.cursor_field))
+            start_date = pc.strptime(stream_state.get(self.cursor_field), format="%Y-%m-%dT%H:%M:%SZ")
 
         date_slices = []
 
