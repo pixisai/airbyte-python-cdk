@@ -5,7 +5,6 @@ import base64
 import logging
 from unittest.mock import Mock
 
-import freezegun
 import datetime
 import pyarrow as pa
 import pyarrow.compute as pc
