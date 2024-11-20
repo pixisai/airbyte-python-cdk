@@ -8,6 +8,7 @@ from typing import Optional, Union
 from unittest.mock import Mock
 
 import freezegun
+import datetime
 import pyarrow as pa
 import pyarrow.compute as pc
 import pytest
@@ -213,10 +214,10 @@ class TestOauth2Authenticator:
     @pytest.mark.parametrize(
         "expires_in_response, token_expiry_date_format, expected_token_expiry_date",
         [
-            (3600, None, datetime(2022, 1, 1, 1, 0, 0, tzinfo=timezone.utc)),
-            ("90012", None, datetime(2022, 1, 2, 1, 0, 12, tzinfo=timezone.utc)),
-            ("2024-02-28", "YYYY-MM-DD", datetime(2024, 2, 28, 0, 0, 0, tzinfo=timezone.utc)),
-            ("2022-02-12T00:00:00.000000+00:00", "YYYY-MM-DDTHH:mm:ss.SSSSSSZ", datetime(2022, 2, 12, 0, 0, 0, tzinfo=timezone.utc)),
+            (3600, None, datetime.datetime(2022, 1, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)),
+            ("90012", None, datetime.datetime(2022, 1, 2, 1, 0, 12, tzinfo=datetime.timezone.utc)),
+            ("2024-02-28", "YYYY-MM-DD", datetime.datetime(2024, 2, 28, 0, 0, 0, tzinfo=datetime.timezone.utc)),
+            ("2022-02-12T00:00:00.000000+00:00", "YYYY-MM-DDTHH:mm:ss.SSSSSSZ", datetime.datetime(2022, 2, 12, 0, 0, 0, tzinfo=datetime.timezone.utc)),
         ],
         ids=["seconds", "string_of_seconds", "simple_date", "simple_datetime"],
     )
@@ -254,7 +255,7 @@ class TestOauth2Authenticator:
         token, expire_in = oauth.refresh_access_token()
         expires_datetime = oauth._parse_token_expiration_date(expire_in)
 
-        assert isinstance(expires_datetime, pendulum.DateTime)
+        assert isinstance(expires_datetime, datetime.datetime)
         assert ("access_token", expected_token_expiry_date) == (token, expires_datetime)
 
     @pytest.mark.usefixtures("mock_sleep")
@@ -378,8 +379,8 @@ class TestSingleUseRefreshTokenOauth2Authenticator:
         )
         assert authenticator.access_token == connector_config["credentials"]["access_token"]
         assert authenticator.get_refresh_token() == connector_config["credentials"]["refresh_token"]
-        assert authenticator.get_token_expiry_date() == pendulum.parse(
-            connector_config["credentials"]["token_expiry_date"]
+        assert authenticator.get_token_expiry_date() == datetime.datetime.fromisoformat(
+            connector_config["credentials"]["token_expiry_date"].replace("Z", "+00:00")
         )
 
     @freezegun.freeze_time("2022-12-31")
@@ -422,7 +423,7 @@ class TestSingleUseRefreshTokenOauth2Authenticator:
         assert airbyte_message["control"]["connectorConfig"]["config"] == expected_new_config
         assert authenticator.access_token == access_token == "new_access_token"
         assert authenticator.get_refresh_token() == "new_refresh_token"
-        assert authenticator.get_token_expiry_date() > pendulum.now()
+        assert authenticator.get_token_expiry_date() > datetime.datetime.now(datetime.timezone.utc)
         authenticator.token_has_expired = mocker.Mock(return_value=False)
         access_token = authenticator.get_access_token()
         captured = capsys.readouterr()
