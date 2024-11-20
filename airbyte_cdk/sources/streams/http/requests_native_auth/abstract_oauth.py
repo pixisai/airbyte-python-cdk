@@ -68,7 +68,7 @@ class AbstractOauth2Authenticator(AuthBase):
 
     def token_has_expired(self) -> bool:
         """Returns True if the token is expired"""
-        return pc.now().as_py() > self.get_token_expiry_date()  # type: ignore # this is always a bool despite what mypy thinks
+        return pc.now().as_py() > self.get_token_expiry_date()
 
     def build_refresh_request_body(self) -> Mapping[str, Any]:
         """

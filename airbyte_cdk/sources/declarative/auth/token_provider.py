@@ -20,7 +20,6 @@ from airbyte_cdk.sources.http_logger import format_http_message
 from airbyte_cdk.sources.message import MessageRepository, NoopMessageRepository
 from airbyte_cdk.sources.types import Config
 from isodate import Duration
-from pendulum import DateTime
 
 
 class TokenProvider:
