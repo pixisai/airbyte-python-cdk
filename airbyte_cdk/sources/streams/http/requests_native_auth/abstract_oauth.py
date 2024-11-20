@@ -8,7 +8,8 @@ from json import JSONDecodeError
 from typing import Any, List, Mapping, MutableMapping, Optional, Tuple, Union
 
 import backoff
-import pendulum
+import pyarrow as pa
+import pyarrow.compute as pc
 import requests
 from airbyte_cdk.models import FailureType, Level
 from airbyte_cdk.sources.http_logger import format_http_message
@@ -66,7 +67,7 @@ class AbstractOauth2Authenticator(AuthBase):
 
     def token_has_expired(self) -> bool:
         """Returns True if the token is expired"""
-        return pendulum.now() > self.get_token_expiry_date()  # type: ignore # this is always a bool despite what mypy thinks
+        return pc.now().as_py() > self.get_token_expiry_date()  # type: ignore # this is always a bool despite what mypy thinks
 
     def build_refresh_request_body(self) -> Mapping[str, Any]:
         """
@@ -176,9 +177,9 @@ class AbstractOauth2Authenticator(AuthBase):
                 raise ValueError(
                     f"Invalid token expiry date format {self.token_expiry_date_format}; a string representing the format is required."
                 )
-            return pendulum.from_format(str(value), self.token_expiry_date_format)
+            return datetime.datetime.strptime(str(value), self.token_expiry_date_format).replace(tzinfo=datetime.timezone.utc)
         else:
-            return pendulum.now().add(seconds=int(float(value)))
+            return pc.add(pc.now(), pa.scalar(float(value))).as_py()
 
     @property
     def token_expiry_is_time_of_expiration(self) -> bool:
